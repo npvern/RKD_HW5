@@ -59,8 +59,14 @@ def total_energy(q, qd):
     th1, th2 = q[:, 0], q[:, 1]
     th1d, th2d = qd[:, 0], qd[:, 1]
 
-    # TODO: compute the kinetic energy T and potential energy V.
-    raise NotImplementedError("total_energy")
+    T = (0.5 * (M1 + M2) * L1**2 * th1d**2
+         + 0.5 * M2 * L2**2 * th2d**2
+         + M2 * L1 * L2 * th1d * th2d * np.cos(th1 - th2))
+
+    V = (-(M1 + M2) * G * L1 * np.cos(th1)
+         - M2 * G * L2 * np.cos(th2))
+
+    return T + V
 
 
 def dynamics(q, qd):
