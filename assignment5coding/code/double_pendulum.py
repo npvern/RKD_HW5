@@ -78,8 +78,23 @@ def dynamics(q, qd):
     qdd.  Write them as  M(q) qdd = b(q, qd)  with a 2x2 matrix M, and
     solve for qdd with np.linalg.solve.
     """
-    # TODO: implement the equations of motion.
-    raise NotImplementedError("dynamics")
+    th1, th2 = q
+    th1d, th2d = qd
+
+    c = np.cos(th1 - th2)
+    s = np.sin(th1 - th2)
+
+    M = np.array([
+        [(M1 + M2) * L1**2,  M2 * L1 * L2 * c],
+        [M2 * L1 * L2 * c,   M2 * L2**2],
+    ])
+
+    b = np.array([
+        -M2 * L1 * L2 * th2d**2 * s - (M1 + M2) * G * L1 * np.sin(th1),
+         M2 * L1 * L2 * th1d**2 * s - M2 * G * L2 * np.sin(th2),
+    ])
+
+    return np.linalg.solve(M, b)
 
 
 def simulate(q0, qd0, T=10.0, dt=0.01):
@@ -108,5 +123,17 @@ def simulate(q0, qd0, T=10.0, dt=0.01):
         3. Unpack the solution (sol.t and sol.y, which has shape (4, N)) into
            t, q and qd.
     """
-    # TODO: simulate the double pendulum.
-    raise NotImplementedError("simulate")
+    t_eval = np.arange(0, T + dt / 2, dt)
+
+    def f(t, x):
+        q, qd = x[:2], x[2:]
+        return np.concatenate([qd, dynamics(q, qd)])
+
+    x0 = np.concatenate([np.asarray(q0, dtype=float), np.asarray(qd0, dtype=float)])
+
+    sol = solve_ivp(f, (0, t_eval[-1]), x0, t_eval=t_eval, rtol=RTOL, atol=ATOL)
+
+    t = sol.t
+    q = sol.y[:2].T
+    qd = sol.y[2:].T
+    return t, q, qd
