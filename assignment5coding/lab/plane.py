@@ -49,7 +49,19 @@ def plane_frame(corners):
     p1, p2, p3, p4 = corners
 
     # TODO: build the paper frame.
+    
+    n = np.cross(p3-p1, p4-p2)
+    n_unit = n / np.linalg.norm(n)
+    c = (p1+p2+p3+p4) / 4
+    o = p1 - np.dot(p1 - c, n_unit) * n_unit
+    x = (p2 - p1) - np.dot(p2-p1, n_unit) * n_unit
+    x_unit = x / np.linalg.norm(x)
+    y_unit = np.cross(n_unit, x_unit)
     H = np.eye(4)
+    H[:3, 0] = x_unit
+    H[:3, 1] = y_unit
+    H[:3, 2] = n_unit
+    H[:3, 3] = o
     return H
 
 
@@ -67,9 +79,8 @@ def paper_to_robot(H, points):
     """
     points = np.asarray(points, dtype=float)
 
-    # TODO: transform the points.
-    return np.zeros_like(points)
-
+    R, o = H[:3, :3], H[:3, 3]
+    return points @ R.T + o
 
 def robot_to_paper(H, points):
     """The inverse of `paper_to_robot`: robot-frame points, in paper coordinates.
@@ -86,5 +97,5 @@ def robot_to_paper(H, points):
     """
     points = np.asarray(points, dtype=float)
 
-    # TODO: transform the points.
-    return np.zeros_like(points)
+    R, o = H[:3, :3], H[:3, 3]
+    return (points - o) @ R

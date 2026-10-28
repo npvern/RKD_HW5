@@ -71,7 +71,20 @@ class Robot:
 
         # Your code starts here
 
-        ...
+        frames[:, :, 0] = np.array([[np.cos(thetas[0]), -np.sin(thetas[0]), 0],
+                            [np.sin(thetas[0]),  np.cos(thetas[0]), 0],
+                            [0,                  0,                 1]])
+
+        for i in range(1, n + 1):
+            T = np.array([[1, 0, self.link_lengths[i - 1]],
+                          [0, 1, 0],
+                          [0, 0, 1]])
+            if i < n:
+                c, s = np.cos(thetas[i]), np.sin(thetas[i])
+                T = T @ np.array([[c, -s, 0],
+                                  [s,  c, 0],
+                                  [0,  0, 1]])
+            frames[:, :, i] = frames[:, :, i - 1] @ T
 
         # Your code ends here
         # --------------- END STUDENT SECTION ------------------------------------------------
@@ -133,7 +146,22 @@ class Robot:
 
         # Your code starts here
 
-        ...
+        n = self.dof
+        for j in range(n):
+            q_plus = thetas.astype(float).copy()
+            q_minus = thetas.astype(float).copy()
+            q_plus[j] += epsilon
+            q_minus[j] -= epsilon
+
+            f_plus = self.forward_kinematics(q_plus)
+            f_minus = self.forward_kinematics(q_minus)
+
+            jacobians[0:2, j, :] = (f_plus[0:2, 2, :] - f_minus[0:2, 2, :]) / (2 * epsilon)
+
+        for i in range(n + 1):
+            for j in range(n):
+                if j <= i:
+                    jacobians[2, j, i] = 1
 
         # Your code ends here
         # --------------- END STUDENT SECTION ----------------------------------------
@@ -196,7 +224,10 @@ class Robot:
                 # Compute the cost gradient
                 # cost_gradient = ...
 
-                ...
+                FK = self.end_effector(thetas)
+                d = FK[:2] - goal_position
+                J = self.jacobians(thetas)[:, :, -1]
+                cost_gradient = J[:2, :].T @ d
 
                 # Your code ends here
 
@@ -213,7 +244,10 @@ class Robot:
                 # Compute the cost gradient
                 # cost_gradient = ...
 
-                ...
+                FK = self.end_effector(thetas)
+                d = FK - goal_position
+                J = self.jacobians(thetas)[:, :, -1]
+                cost_gradient = J.T @ d
 
                 # Your code ends here
 
@@ -222,7 +256,7 @@ class Robot:
 
             # thetas = thetas - step_size * cost_gradient
 
-            ...
+            thetas = thetas - step_size * cost_gradient
 
             # Your code ends here
 
@@ -232,7 +266,8 @@ class Robot:
             # if np.linalg.norm(cost_gradient) < stopping_condition:
             #     return thetas
 
-            ...
+            if np.linalg.norm(cost_gradient) < stopping_condition:
+                return thetas
 
             # Your code ends here
 
